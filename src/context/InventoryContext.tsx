@@ -23,7 +23,6 @@ interface InventoryContextType {
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
 
-// --- Mappers: DB (snake_case) <-> App (camelCase) ---
 
 const productFromDb = (row: any): Product => ({
   id: row.id,
