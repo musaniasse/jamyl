@@ -14,7 +14,7 @@ import { StockExit } from './pages/StockExit';
 import { Movements } from './pages/Movements';
 import { Suppliers } from './pages/Suppliers';
 import { Categories } from './pages/Categories';
-import { InventoryProvider } from './context/InventoryContext';
+import { InventoryProvider } from './context/InventoryContext.js';
 import { Toaster } from './components/ui/Sonner';
 import { useScreenInit } from './useScreenInit.js';
 type ViewType =
