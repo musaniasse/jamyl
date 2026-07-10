@@ -32,7 +32,7 @@ export function Login({ onLogin }: LoginProps) {
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
       <motion.div
-        className="w-full max-w-sm sm:max-w-md"
+        className="w-full max-w-sm md:max-w-md"
         initial={{
           opacity: 0,
           y: 16
@@ -50,13 +50,18 @@ export function Login({ onLogin }: LoginProps) {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Boxes className="h-6 w-6" strokeWidth={1.5} />
           </div>
-          <span className="text-xl font-bold tracking-tight">Djamyl</span>
+          <span className="text-xl font-bold tracking-tight">StockPro</span>
         </div>
 
-        <Card className="border-none shadow-none sm:border sm:shadow-sm">
-          
-          <CardContent className="px-4 sm:px-6">
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+        <Card className="border-none shadow-none md:border md:shadow-sm">
+          <CardHeader className="text-center px-4 md:px-6">
+            <CardTitle className="text-2xl">Connexion</CardTitle>
+            <CardDescription>
+              Accédez à votre espace de gestion de stock
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="px-4 md:px-6">
+            <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="login">Identifiant</Label>
                 <div className="relative">
@@ -66,7 +71,7 @@ export function Login({ onLogin }: LoginProps) {
                     value={login}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLogin(e.target.value)}
                     placeholder="Votre identifiant"
-                    className="pl-9 h-11 sm:h-10 text-base sm:text-sm"
+                    className="pl-9 h-11 md:h-10 text-base md:text-sm"
                     autoComplete="username" />
                   
                 </div>
@@ -82,12 +87,12 @@ export function Login({ onLogin }: LoginProps) {
                     value={password}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                     placeholder="Votre mot de passe"
-                    className="pl-9 h-11 sm:h-10 text-base sm:text-sm"
+                    className="pl-9 h-11 md:h-10 text-base md:text-sm"
                     autoComplete="current-password" />
                 </div>
               </div>
 
-              <Button type="submit" className="w-full h-11 sm:h-10">
+              <Button type="submit" className="w-full h-11 md:h-10">
                 Se connecter
               </Button>
             </form>
