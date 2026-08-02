@@ -132,10 +132,10 @@ export function Movements() {
               <Label htmlFor="type">Type de mouvement</Label>
               <Select
                 value={formData.type}
-                onValueChange={(v: MovementType) =>
+                onValueChange={(v: string) =>
                 setFormData({
                   ...formData,
-                  type: v
+                  type: v as MovementType
                 })
                 }>
                 

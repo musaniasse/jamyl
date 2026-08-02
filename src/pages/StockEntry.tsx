@@ -25,46 +25,109 @@ import {
   SelectTrigger,
   SelectValue } from
 '../components/ui/Select';
-import { PackagePlus } from 'lucide-react';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { PackagePlus, Pencil, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
+
 const currency = (value: number) =>
 value.toLocaleString('fr-FR', {
   style: 'currency',
-  currency: 'EUR'
+  currency: 'XOF',
+  maximumFractionDigits: 0
 });
+
+const emptyForm = {
+  productId: '',
+  supplierId: '',
+  quantity: 1,
+  unitPrice: 0,
+  date: new Date().toISOString().slice(0, 10)
+};
+
 export function StockEntry() {
-  const { products, suppliers, movements, addMovement } = useInventory();
-  const [formData, setFormData] = useState({
-    productId: '',
-    supplierId: '',
-    quantity: 1,
-    unitPrice: 0,
-    date: new Date().toISOString().slice(0, 10)
-  });
+  const { products, suppliers, movements, addMovement, updateMovement, deleteMovement } = useInventory();
+  const [formData, setFormData] = useState(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+
   const amount = (formData.quantity || 0) * (formData.unitPrice || 0);
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const resetForm = () => {
+    setFormData(emptyForm);
+    setEditingId(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.productId || !formData.supplierId) {
       toast.error('Veuillez sélectionner un produit et un fournisseur.');
       return;
     }
-    addMovement({
-      productId: formData.productId,
-      supplierId: formData.supplierId,
-      type: 'IN',
-      quantity: formData.quantity,
-      unitPrice: formData.unitPrice,
-      reason: 'Entrée de stock (fiche)'
-    });
-    toast.success("Fiche d'entrée enregistrée avec succès");
-    setFormData({
-      productId: '',
-      supplierId: '',
-      quantity: 1,
-      unitPrice: 0,
-      date: new Date().toISOString().slice(0, 10)
-    });
+
+    try {
+      if (editingId) {
+        await updateMovement(editingId, {
+          productId: formData.productId,
+          supplierId: formData.supplierId,
+          type: 'IN',
+          quantity: formData.quantity,
+          unitPrice: formData.unitPrice,
+          date: new Date(formData.date).toISOString(),
+          reason: 'Entrée de stock (fiche)'
+        });
+        toast.success("Fiche d'entrée mise à jour avec succès");
+      } else {
+        await addMovement({
+          productId: formData.productId,
+          supplierId: formData.supplierId,
+          type: 'IN',
+          quantity: formData.quantity,
+          unitPrice: formData.unitPrice,
+          reason: 'Entrée de stock (fiche)'
+        });
+        toast.success("Fiche d'entrée enregistrée avec succès");
+      }
+      resetForm();
+    } catch (err) {
+      toast.error("Une erreur est survenue lors de l'enregistrement.");
+    }
   };
+
+  const handleEdit = (movementId: string) => {
+    const m = movements.find(mv => mv.id === movementId);
+    if (!m) return;
+    setFormData({
+      productId: m.productId,
+      supplierId: m.supplierId || '',
+      quantity: m.quantity,
+      unitPrice: m.unitPrice || 0,
+      date: new Date(m.date).toISOString().slice(0, 10)
+    });
+    setEditingId(movementId);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const requestDelete = (movementId: string) => {
+    setDeleteTargetId(movementId);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTargetId) return;
+    try {
+      await deleteMovement(deleteTargetId);
+      toast.success('Entrée supprimée avec succès');
+      if (editingId === deleteTargetId) resetForm();
+    } catch (err) {
+      toast.error("Une erreur est survenue lors de la suppression.");
+    } finally {
+      setDeleteTargetId(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteTargetId(null);
+  };
+
   const stockEntries = movements.
   filter((m) => m.type === 'IN').
   sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -72,6 +135,11 @@ export function StockEntry() {
     (acc, m) => acc + (m.unitPrice || 0) * m.quantity,
     0
   );
+
+  const productBeingDeleted = deleteTargetId
+    ? products.find(p => p.id === movements.find(m => m.id === deleteTargetId)?.productId)
+    : null;
+
   return (
     <div className="space-y-6">
       <div>
@@ -86,7 +154,8 @@ export function StockEntry() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <PackagePlus className="h-5 w-5" /> Nouvelle entrée
+            <PackagePlus className="h-5 w-5" />
+            {editingId ? "Modifier l'entrée" : 'Nouvelle entrée'}
           </CardTitle>
           <CardDescription>
             Le montant est calculé automatiquement (quantité × prix unitaire).
@@ -161,11 +230,11 @@ export function StockEntry() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="unitPrice">Prix unitaire (€)</Label>
+                <Label htmlFor="unitPrice">Prix unitaire (F CFA)</Label>
                 <Input
                   id="unitPrice"
                   type="number"
-                  step="0.01"
+                  step="1"
                   min="0"
                   value={formData.unitPrice}
                   onChange={(e) =>
@@ -205,9 +274,15 @@ export function StockEntry() {
               </div>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              {editingId &&
+              <Button type="button" variant="outline" onClick={resetForm}>
+                  <X className="mr-2 h-4 w-4" /> Annuler
+                </Button>
+              }
               <Button type="submit">
-                <PackagePlus className="mr-2 h-4 w-4" /> Enregistrer l'entrée
+                <PackagePlus className="mr-2 h-4 w-4" />
+                {editingId ? "Mettre à jour l'entrée" : "Enregistrer l'entrée"}
               </Button>
             </div>
           </form>
@@ -233,13 +308,14 @@ export function StockEntry() {
                     Prix U.
                   </TableHead>
                   <TableHead className="text-right">Montant</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {stockEntries.length === 0 ?
                 <TableRow>
                     <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     className="text-center text-muted-foreground py-8">
                     
                       Aucune entrée enregistrée pour le moment.
@@ -253,7 +329,7 @@ export function StockEntry() {
                   );
                   const lineAmount = (m.unitPrice || 0) * m.quantity;
                   return (
-                    <TableRow key={m.id}>
+                    <TableRow key={m.id} className={editingId === m.id ? 'bg-muted/50' : undefined}>
                         <TableCell className="whitespace-nowrap">
                           {new Date(m.date).toLocaleDateString('fr-FR')}
                         </TableCell>
@@ -277,6 +353,26 @@ export function StockEntry() {
                         <TableCell className="text-right font-medium">
                           {m.unitPrice != null ? currency(lineAmount) : '—'}
                         </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(m.id)}
+                              aria-label="Modifier">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => requestDelete(m.id)}
+                              aria-label="Supprimer">
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>);
 
                 })
@@ -295,6 +391,7 @@ export function StockEntry() {
                     <TableCell className="text-right font-bold">
                       {currency(totalEntries)}
                     </TableCell>
+                    <TableCell />
                   </TableRow>
                 }
               </TableBody>
@@ -302,6 +399,21 @@ export function StockEntry() {
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={deleteTargetId !== null}
+        title="Supprimer cette entrée ?"
+        description={
+          productBeingDeleted
+            ? `Cette action supprimera l'entrée de stock pour "${productBeingDeleted.name}" et ajustera le stock en conséquence. Cette action est irréversible.`
+            : "Cette action supprimera l'entrée de stock et ajustera le stock en conséquence. Cette action est irréversible."
+        }
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        variant="destructive"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>);
 
 }

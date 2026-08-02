@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '../api/supabaseClient';
 import type { Category, Supplier, Product, Movement } from '../types/inventory';
+export type { Category, Supplier, Product, Movement, MovementType } from '../types/inventory';
 
 interface InventoryContextType {
   categories: Category[];
@@ -19,6 +20,8 @@ interface InventoryContextType {
   updateProduct: (id: string, product: Omit<Product, 'id'>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   addMovement: (movement: Omit<Movement, 'id' | 'date'>) => Promise<void>;
+  updateMovement: (id: string, movement: Omit<Movement, 'id'>) => Promise<void>;
+  deleteMovement: (id: string) => Promise<void>;
 }
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
@@ -65,6 +68,17 @@ const movementToDb = (movement: Omit<Movement, 'id' | 'date'>) => ({
   product_id: movement.productId,
   type: movement.type,
   quantity: movement.quantity,
+  reason: movement.reason,
+  unit_price: movement.unitPrice,
+  supplier_id: movement.supplierId,
+  client: movement.client
+});
+
+const movementUpdateToDb = (movement: Omit<Movement, 'id'>) => ({
+  product_id: movement.productId,
+  type: movement.type,
+  quantity: movement.quantity,
+  date: movement.date,
   reason: movement.reason,
   unit_price: movement.unitPrice,
   supplier_id: movement.supplierId,
@@ -189,6 +203,93 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   };
 
+  const updateMovement = async (id: string, movement: Omit<Movement, 'id'>) => {
+    const oldMovement = movements.find(m => m.id === id);
+    if (!oldMovement) throw new Error('Mouvement introuvable');
+
+    const { data, error } = await supabase
+      .from('movements')
+      .update(movementUpdateToDb(movement))
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    const updatedMovement = movementFromDb(data);
+    setMovements(prev => prev.map(m => (m.id === id ? updatedMovement : m)));
+
+    const oldProduct = products.find(p => p.id === oldMovement.productId);
+    if (!oldProduct) return;
+
+    const oldEffect = oldMovement.type === 'IN' ? oldMovement.quantity : -oldMovement.quantity;
+    const reversedStock = oldProduct.stock - oldEffect;
+
+    if (oldMovement.productId === movement.productId) {
+      // Même produit : on annule l'ancien effet et on applique le nouveau directement
+      const newEffect = movement.type === 'IN' ? movement.quantity : -movement.quantity;
+      const finalStock = reversedStock + newEffect;
+      const { data: prodData, error: prodError } = await supabase
+        .from('products')
+        .update({ stock: finalStock })
+        .eq('id', oldProduct.id)
+        .select()
+        .single();
+      if (prodError) throw prodError;
+      setProducts(prev => prev.map(p => (p.id === oldProduct.id ? productFromDb(prodData) : p)));
+    } else {
+      // Produit changé : on restaure l'ancien produit et on impacte le nouveau
+      const { data: oldProdData, error: oldProdError } = await supabase
+        .from('products')
+        .update({ stock: reversedStock })
+        .eq('id', oldProduct.id)
+        .select()
+        .single();
+      if (oldProdError) throw oldProdError;
+
+      const newProduct = products.find(p => p.id === movement.productId);
+      if (newProduct) {
+        const newEffect = movement.type === 'IN' ? movement.quantity : -movement.quantity;
+        const newProductStock = newProduct.stock + newEffect;
+        const { data: newProdData, error: newProdError } = await supabase
+          .from('products')
+          .update({ stock: newProductStock })
+          .eq('id', newProduct.id)
+          .select()
+          .single();
+        if (newProdError) throw newProdError;
+        setProducts(prev => prev.map(p => {
+          if (p.id === oldProduct.id) return productFromDb(oldProdData);
+          if (p.id === newProduct.id) return productFromDb(newProdData);
+          return p;
+        }));
+      } else {
+        setProducts(prev => prev.map(p => (p.id === oldProduct.id ? productFromDb(oldProdData) : p)));
+      }
+    }
+  };
+
+  const deleteMovement = async (id: string) => {
+    const movementToDelete = movements.find(m => m.id === id);
+    if (!movementToDelete) throw new Error('Mouvement introuvable');
+
+    const { error } = await supabase.from('movements').delete().eq('id', id);
+    if (error) throw error;
+    setMovements(prev => prev.filter(m => m.id !== id));
+
+    const product = products.find(p => p.id === movementToDelete.productId);
+    if (product) {
+      const effect = movementToDelete.type === 'IN' ? movementToDelete.quantity : -movementToDelete.quantity;
+      const restoredStock = product.stock - effect;
+      const { data, error: prodError } = await supabase
+        .from('products')
+        .update({ stock: restoredStock })
+        .eq('id', product.id)
+        .select()
+        .single();
+      if (prodError) throw prodError;
+      setProducts(prev => prev.map(p => (p.id === product.id ? productFromDb(data) : p)));
+    }
+  };
+
   return (
     <InventoryContext.Provider
       value={{
@@ -196,7 +297,7 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
         addCategory, updateCategory, deleteCategory,
         addSupplier, updateSupplier, deleteSupplier,
         addProduct, updateProduct, deleteProduct,
-        addMovement
+        addMovement, updateMovement, deleteMovement
       }}
     >
       {children}

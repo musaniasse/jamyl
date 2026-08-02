@@ -1,4 +1,3 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { useInventory } from '../context/InventoryContext';
 import {
@@ -14,8 +13,7 @@ import {
   Bar,
   XAxis,
   YAxis,
-  Tooltip,
-  ResponsiveContainer } from
+  Tooltip } from
 'recharts';
 export function Dashboard() {
   const { products, movements, categories } = useInventory();
@@ -25,7 +23,6 @@ export function Dashboard() {
     (acc, p) => acc + p.stock * p.purchasePrice,
     0
   );
-  // Prepare chart data
   const stockByCategory = categories.map((c) => {
     const categoryProducts = products.filter((p) => p.categoryId === c.id);
     const totalStock = categoryProducts.reduce((acc, p) => acc + p.stock, 0);
