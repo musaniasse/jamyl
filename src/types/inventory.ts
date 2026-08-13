@@ -37,3 +37,36 @@ export type Movement = {
   supplierId?: string;
   client?: string;
 };
+
+export interface ShipmentFees {
+  dpiFees: number;
+  bankFees: number;
+  franceTransportFees: number;
+  maritimeFees: number;
+  customsFees: number;
+  exploitationDocFees: number;
+  airFees: number;
+  pickupToPortFees: number;
+  gpToHomeFees: number;
+}
+
+export interface ShipmentItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPurchasePrice: number;
+  totalPurchaseValue: number;
+  allocatedFees: number;
+  costPricePerUnit: number;
+}
+
+export interface Shipment {
+  id: string;
+  reference: string;
+  date: string;
+  fees: ShipmentFees;
+  items: ShipmentItem[];
+  totalFees: number;
+  totalPurchaseValue: number;
+  totalCost: number;
+}

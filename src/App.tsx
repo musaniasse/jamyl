@@ -15,8 +15,10 @@ import { Movements } from './pages/Movements';
 import { Suppliers } from './pages/Suppliers';
 import { Categories } from './pages/Categories';
 import { InventoryProvider } from './context/InventoryContext.js';
+import { ShipmentProvider } from './context/ShipmentContext';
 import { Toaster } from './components/ui/Sonner';
 import { useScreenInit } from './useScreenInit.js';
+import { CostCalculator } from './pages/CostCalculator.js';
 type ViewType =
 'dashboard' |
 'products' |
@@ -24,7 +26,8 @@ type ViewType =
 'stockExit' |
 'movements' |
 'suppliers' |
-'categories';
+'categories' |
+'costCalculator';
 type AppPhase = 'splash' | 'auth' | 'app';
 function AppShell() {
   const screenInit = useScreenInit();
@@ -47,6 +50,8 @@ function AppShell() {
         return <Suppliers />;
       case 'categories':
         return <Categories />;
+      case 'costCalculator':
+        return <CostCalculator />;
       default:
         return <Dashboard />;
     }
@@ -87,7 +92,9 @@ function AppContent() {
 export function App() {
   return (
     <InventoryProvider>
-      <AppContent />
+      <ShipmentProvider>
+        <AppContent />
+      </ShipmentProvider>
     </InventoryProvider>);
 
 }

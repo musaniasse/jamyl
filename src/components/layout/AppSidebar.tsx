@@ -5,7 +5,8 @@ import {
   Truck,
   Tags,
   PackagePlus,
-  PackageMinus } from
+  PackageMinus,
+  Calculator } from
 'lucide-react';
 import {
   Sidebar,
@@ -25,7 +26,8 @@ type ViewType =
 'stockExit' |
 'movements' |
 'suppliers' |
-'categories';
+'categories' |
+'costCalculator';
 interface AppSidebarProps {
   activeView: ViewType;
   setActiveView: (view: ViewType) => void;
@@ -56,6 +58,11 @@ export function AppSidebar({ activeView, setActiveView }: AppSidebarProps) {
     id: 'movements',
     label: 'Mouvements',
     icon: ArrowLeftRight
+  },
+  {
+    id: 'costCalculator',
+    label: 'Prix de revient',
+    icon: Calculator
   },
   {
     id: 'suppliers',
