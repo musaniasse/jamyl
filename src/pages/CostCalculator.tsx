@@ -58,14 +58,14 @@ const emptyFees = {
 
 const feeLabels: { key: keyof typeof emptyFees; label: string }[] = [
   { key: 'dpiFees', label: 'Frais de DPI' },
-  { key: 'bankFees', label: 'Frais bancaires' },
+  { key: 'bankFees', label: "Frais de transfert d'argent" },
   { key: 'franceTransportFees', label: 'Frais transport en France' },
   { key: 'maritimeFees', label: 'Frais maritime' },
-  { key: 'customsFees', label: 'Frais de dédouanement' },
+  { key: 'customsFees', label: 'Frais de dédouanement maritime' },
   { key: 'exploitationDocFees', label: "Frais document d'exploitation" },
   { key: 'airFees', label: 'Frais aérien' },
-  { key: 'pickupToPortFees', label: 'Livraison ramassage → port France' },
-  { key: 'gpToHomeFees', label: 'Livraison point GP → domicile' }
+  { key: 'pickupToPortFees', label: 'Frais de dédouanement aérien' },
+  { key: 'gpToHomeFees', label: 'Frais de livraison Sénégal' }
 ];
 
 export function CostCalculator() {
